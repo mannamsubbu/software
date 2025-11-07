@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
-import { Link, useLocation } from "react-router-dom";
-import { createPageUrl } from "./utils"; // fixed
-import User from "./Entities/User";     // fixed
+import { Link, useLocation, useNavigate } from "react-router-dom";
+import { createPageUrl } from "./utils";
+import User from "./Entities/User";
 import { Search, Home, PlusSquare, Shield, LogOut, ClipboardList } from "lucide-react";
 import {
   Sidebar,
@@ -16,11 +16,12 @@ import {
   SidebarFooter,
   SidebarProvider,
   SidebarTrigger,
-} from "./Components/ui/Sidebar";       // fixed
-import { Button } from "./Components/ui/Button"; // fixed
+} from "./Components/ui/Sidebar";
+import { Button } from "./Components/ui/Button";
 
-export default function Layout({ children, currentPageName }) {
+export default function Layout({ children }) {
   const location = useLocation();
+  const navigate = useNavigate();
   const [user, setUser] = useState(null);
 
   useEffect(() => {
@@ -28,7 +29,7 @@ export default function Layout({ children, currentPageName }) {
       try {
         const currentUser = await User.me();
         setUser(currentUser);
-      } catch (error) {
+      } catch {
         setUser(null); // Not logged in
       }
     };
@@ -68,22 +69,19 @@ export default function Layout({ children, currentPageName }) {
           .bg-amrita-light-blue { background-color: var(--amrita-light-blue); }
         `}
       </style>
+
       <div className="min-h-screen flex w-full bg-gray-50">
+        {/* Sidebar */}
         <Sidebar className="border-r border-gray-200/60 bg-white/95 backdrop-blur-sm">
           <SidebarHeader className="border-b border-gray-200/60 p-5">
             <Link to={createPageUrl("Dashboard")} className="flex items-center gap-3">
               <div className="flex items-center gap-3">
-  <img 
-    src="/logo.png" 
-    alt="Back2U Logo" 
-    className="w-10 h-10 object-contain"
-  />
-  <div>
-    <h2 className="font-bold text-amrita-blue text-lg">Back2You</h2>
-    <p className="text-sm text-gray-500 font-medium">Amrita Lost & Found</p>
-  </div>
-</div>
-
+                <img src="/logo.png" alt="Back2U Logo" className="w-10 h-10 object-contain" />
+                <div>
+                  <h2 className="font-bold text-amrita-blue text-lg">Back2U</h2>
+                  <p className="text-sm text-gray-500 font-medium">Amrita Lost & Found</p>
+                </div>
+              </div>
             </Link>
           </SidebarHeader>
 
@@ -98,10 +96,11 @@ export default function Layout({ children, currentPageName }) {
                     <SidebarMenuItem key={item.title}>
                       <SidebarMenuButton
                         asChild
-                        className={`transition-all duration-200 rounded-lg text-sm ${location.pathname === item.url
-                          ? "bg-amrita-light-blue text-amrita-blue shadow-sm"
-                          : "text-gray-600 hover:bg-gray-100 hover:text-gray-900"
-                          }`}
+                        className={`transition-all duration-200 rounded-lg text-sm ${
+                          location.pathname === item.url
+                            ? "bg-amrita-light-blue text-amrita-blue shadow-sm"
+                            : "text-gray-600 hover:bg-gray-100 hover:text-gray-900"
+                        }`}
                       >
                         <Link to={item.url} className="flex items-center gap-3 px-3 py-2.5">
                           <item.icon className="w-5 h-5" />
@@ -110,14 +109,16 @@ export default function Layout({ children, currentPageName }) {
                       </SidebarMenuButton>
                     </SidebarMenuItem>
                   ))}
+
                   {user && user.role === "admin" && (
                     <SidebarMenuItem>
                       <SidebarMenuButton
                         asChild
-                        className={`transition-all duration-200 rounded-lg text-sm ${location.pathname === adminNavigationItem.url
-                          ? "bg-amrita-light-blue text-amrita-blue shadow-sm"
-                          : "text-gray-600 hover:bg-gray-100 hover:text-gray-900"
-                          }`}
+                        className={`transition-all duration-200 rounded-lg text-sm ${
+                          location.pathname === adminNavigationItem.url
+                            ? "bg-amrita-light-blue text-amrita-blue shadow-sm"
+                            : "text-gray-600 hover:bg-gray-100 hover:text-gray-900"
+                        }`}
                       >
                         <Link to={adminNavigationItem.url} className="flex items-center gap-3 px-3 py-2.5">
                           <adminNavigationItem.icon className="w-5 h-5" />
@@ -150,7 +151,7 @@ export default function Layout({ children, currentPageName }) {
             ) : (
               <Button
                 className="w-full bg-amrita-blue hover:bg-amrita-blue-dark text-white"
-                onClick={() => User.login()}
+                onClick={() => navigate("/login")}
               >
                 Login with Campus ID
               </Button>
@@ -158,18 +159,19 @@ export default function Layout({ children, currentPageName }) {
           </SidebarFooter>
         </Sidebar>
 
+        {/* Main content */}
         <main className="flex-1 flex flex-col bg-gray-50/50">
           <header className="bg-white/90 backdrop-blur-sm border-b border-gray-200/60 px-6 py-4 md:hidden">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-4">
                 <SidebarTrigger className="hover:bg-gray-100 p-2 rounded-xl transition-colors duration-200" />
-                <h1 className="text-lg font-bold text-amrita-blue">Back2You</h1>
+                <h1 className="text-lg font-bold text-amrita-blue">Back2U</h1>
               </div>
               {!user && (
                 <Button
                   size="sm"
                   className="bg-amrita-blue hover:bg-amrita-blue-dark text-white"
-                  onClick={() => User.login()}
+                  onClick={() => navigate("/login")}
                 >
                   Login
                 </Button>
