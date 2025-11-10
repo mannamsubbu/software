@@ -63,7 +63,7 @@ export default function RecentActivity({ items, isLoading }) {
           {items.length > 0 ? (
             items.map((item, index) => (
               <motion.div
-                key={item.id}
+                key={item._id || item.id}
                 initial={{ opacity: 0, x: -20 }}
                 animate={{ opacity: 1, x: 0 }}
                 transition={{ delay: index * 0.1 }}
@@ -75,13 +75,15 @@ export default function RecentActivity({ items, isLoading }) {
 
                 <div className="flex-1 min-w-0">
                   <h3 className="font-semibold text-gray-900 truncate">
-                    {item.title}
+                    {item.itemName || item.title || "Item"}
                   </h3>
                   <div className="flex items-center gap-4 text-sm text-gray-500">
-                    <span>At: {item.location_found || "Unknown"}</span>
+                    <span>At: {item.locationFound || item.location_found || "Unknown"}</span>
                     <span>•</span>
                     <span>
-                      {item.created_date
+                      {item.createdAt
+                        ? format(new Date(item.createdAt), "MMM d, yyyy")
+                        : item.created_date
                         ? format(new Date(item.created_date), "MMM d, yyyy")
                         : "Date not available"}
                     </span>

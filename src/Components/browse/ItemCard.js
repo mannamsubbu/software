@@ -5,16 +5,14 @@ import { Calendar, Eye } from "lucide-react";     // removed MapPin (unused)
 import { format } from "date-fns";
 import { motion } from "framer-motion";
 
+// FIX 1: All keys are now lowercase and match your database model's enum
 const CATEGORY_ICONS = {
   electronics: "📱",
   clothing: "👕",
-  books: "📚",
-  jewelry: "💍",
+  "id card": "🆔", // Changed from 'documents'
   keys: "🗝️",
-  bags: "🎒",
-  documents: "📄",
-  sports_equipment: "⚽",
   other: "📦",
+  // Removed unused keys
 };
 
 export default function ItemCard({ item, index, onCardClick }) {
@@ -29,10 +27,12 @@ export default function ItemCard({ item, index, onCardClick }) {
       <Card className="hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1.5 border-none shadow-md overflow-hidden bg-white h-full flex flex-col">
         {/* Image or Category Icon */}
         <div className="aspect-video flex items-center justify-center text-5xl relative overflow-hidden">
-          {item.image_url ? (
+          
+          {/* FIX 2: Use item.imageUrl (capital 'U') */}
+          {item.imageUrl ? (
             <img
-              src={item.image_url}
-              alt={item.title}
+              src={item.imageUrl}
+              alt={item.itemName} // <-- Also fixed here
               className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
             />
           ) : (
@@ -49,8 +49,9 @@ export default function ItemCard({ item, index, onCardClick }) {
 
         {/* Content */}
         <CardContent className="p-4 flex flex-col flex-grow">
+          {/* FIX 3: Use item.itemName */}
           <h3 className="font-bold text-md text-gray-800 truncate group-hover:text-amrita-blue transition-colors duration-200">
-            {item.title}
+            {item.itemName}
           </h3>
           <p className="text-gray-600 text-sm mb-3 line-clamp-2 h-10 flex-grow">
             {item.description}
@@ -60,8 +61,9 @@ export default function ItemCard({ item, index, onCardClick }) {
               <Calendar className="w-3 h-3" />
               <span>
                 On:{" "}
-                {item.date_found
-                  ? format(new Date(item.date_found), "MMM d, yyyy")
+                {/* FIX 4: Use item.dateFound (capital 'F') */}
+                {item.dateFound
+                  ? format(new Date(item.dateFound), "MMM d, yyyy")
                   : "Unknown date"}
               </span>
             </div>

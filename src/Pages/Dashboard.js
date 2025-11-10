@@ -1,8 +1,5 @@
 import React, { useState, useEffect } from "react";
-import FoundItem from "../Entities/FoundItem";
-import User from "../Entities/User"; // create this if not done yet
-import { Link } from "react-router-dom";
-import { createPageUrl } from "../utils"; // keep utils.js in src/
+import { Link, useNavigate } from "react-router-dom"; // Import useNavigate
 import { Button } from "../Components/ui/Button";
 import { 
   PlusSquare, 
@@ -17,35 +14,56 @@ import StatsCard from "../Components/dashboard/StatsCard";
 import RecentActivity from "../Components/dashboard/RecentActivity";
 
 export default function Dashboard() {
-  const [items, setItems] = useState([]);
+  const [stats, setStats] = useState({ totalFound: 0, totalReturned: 0 });
+  const [recentItems, setRecentItems] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [user, setUser] = useState(null);
+  const navigate = useNavigate();
 
   useEffect(() => {
-    loadData();
-    const fetchUser = async () => {
-      try {
-        const currentUser = await User.me();
-        setUser(currentUser);
-      } catch (e) {
-        /* not logged in */
+    const loadDashboardData = async () => {
+      setIsLoading(true);
+      
+      const token = localStorage.getItem("authToken");
+      if (!token) {
+        navigate("/login"); // Redirect to login if no token
+        return;
       }
-    };
-    fetchUser();
-  }, []);
 
-  const loadData = async () => {
-    setIsLoading(true);
-    try {
-      const data = await FoundItem.list("-created_date", 10);
-      setItems(data);
-    } catch (error) {
-      console.error("Error loading data:", error);
-    }
-    setIsLoading(false);
-  };
-  
-  const totalReturned = items.filter(i => i.status === "returned").length;
+      try {
+        const response = await fetch("http://localhost:5000/api/dashboard", {
+          method: "GET",
+          headers: {
+            "Content-Type": "application/json",
+            "Authorization": `Bearer ${token}` // Send the token
+          },
+        });
+
+        if (response.status === 401) {
+          localStorage.removeItem("authToken");
+          navigate("/login"); // Token is invalid
+          return;
+        }
+        
+        if (!response.ok) {
+          throw new Error("Failed to fetch dashboard data");
+        }
+
+        const data = await response.json();
+        
+        setStats({
+          totalFound: data.totalFound,
+          totalReturned: data.totalReturned,
+        });
+        setRecentItems(data.recentItems);
+
+      } catch (error) {
+        console.error("Error loading data:", error);
+      }
+      setIsLoading(false);
+    };
+
+    loadDashboardData();
+  }, [navigate]);
 
   return (
     <div className="p-4 md:p-8 bg-gray-50/50 min-h-screen">
@@ -68,13 +86,15 @@ export default function Dashboard() {
             </p>
             
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
-              <Link to={createPageUrl("ReportFound")}>
+              {/* Updated Link to use standard paths */}
+              <Link to="/report-found">
                 <Button className="bg-amrita-blue hover:bg-amrita-blue-dark text-white px-8 py-3 text-lg font-semibold rounded-lg shadow-lg shadow-blue-500/20 hover:shadow-xl transition-all duration-300 transform hover:-translate-y-0.5">
                   <PlusSquare className="w-5 h-5 mr-3" />
                   Report a Found Item
                 </Button>
               </Link>
-              <Link to={createPageUrl("BrowseFound")}>
+              {/* Updated Link to use standard paths */}
+              <Link to="/browse-found">
                 <Button variant="outline" className="border-2 border-gray-300 hover:border-amrita-blue px-8 py-3 text-lg font-semibold rounded-lg bg-white/80 backdrop-blur-sm hover:bg-gray-50 transition-all duration-300">
                   <Search className="w-5 h-5 mr-3" />
                   Browse Found Items
@@ -88,7 +108,7 @@ export default function Dashboard() {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           <StatsCard
             title="Items Found"
-            value={items.length}
+            value={isLoading ? '...' : stats.totalFound}
             subtitle="Waiting for their owners"
             icon={ClipboardList}
             color="text-amrita-blue"
@@ -96,7 +116,7 @@ export default function Dashboard() {
           />
           <StatsCard
             title="Items Returned"
-            value={totalReturned}
+            value={isLoading ? '...' : stats.totalReturned}
             subtitle="Successfully reunited"
             icon={CheckCircle}
             color="text-green-600"
@@ -104,7 +124,7 @@ export default function Dashboard() {
           />
           <StatsCard
             title="Community Members"
-            value="1,500+"
+            value="1,500+" // This is still hardcoded, which is fine
             subtitle="Helping each other out"
             icon={Users}
             color="text-amrita-saffron"
@@ -113,7 +133,7 @@ export default function Dashboard() {
         </div>
 
         {/* Recent Activity */}
-        <RecentActivity items={items} isLoading={isLoading} />
+        <RecentActivity items={recentItems} isLoading={isLoading} />
       </div>
     </div>
   );

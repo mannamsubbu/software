@@ -1,8 +1,15 @@
 import React, { useState, useEffect } from "react";
-import { Link, useLocation } from "react-router-dom";
-import { createPageUrl } from "./utils"; // fixed
-import User from "./Entities/User";     // fixed
-import { Search, Home, PlusSquare, Shield, LogOut, ClipboardList } from "lucide-react";
+import { Link, useLocation, useNavigate, Outlet } from "react-router-dom";
+import { jwtDecode } from "jwt-decode";
+import { 
+  Search, 
+  Home, 
+  PlusSquare, 
+  Shield, 
+  LogOut, 
+  ClipboardList,
+  Settings as SettingsIcon
+} from "lucide-react";
 import {
   Sidebar,
   SidebarContent,
@@ -16,37 +23,63 @@ import {
   SidebarFooter,
   SidebarProvider,
   SidebarTrigger,
-} from "./Components/ui/Sidebar";       // fixed
-import { Button } from "./Components/ui/Button"; // fixed
+} from "./Components/ui/Sidebar"; 
+import { Button } from "./Components/ui/Button"; 
 
-export default function Layout({ children, currentPageName }) {
+// --- ROLLED-BACK NAVIGATION ---
+const navigationItems = [
+  { title: "Dashboard", url: "/dashboard", icon: Home },
+  { title: "Report Found Item", url: "/report-found", icon: PlusSquare },
+  { title: "Browse Found Items", url: "/browse-found", icon: Search },
+  { title: "Report Lost Item", url: "/report-lost", icon: PlusSquare },
+  { title: "Browse Lost Items", url: "/browse-lost", icon: Search },
+  { title: "My Activity", url: "/my-activity", icon: ClipboardList },
+  { title: "Settings", url: "/settings", icon: SettingsIcon },
+];
+// -----------------------------
+
+const adminNavigationItem = {
+  title: "Admin Dashboard",
+  url: "/admin",
+  icon: Shield,
+};
+
+export default function Layout() {
   const location = useLocation();
+  const navigate = useNavigate();
   const [user, setUser] = useState(null);
 
   useEffect(() => {
-    const fetchUser = async () => {
-      try {
-        const currentUser = await User.me();
-        setUser(currentUser);
-      } catch (error) {
-        setUser(null); // Not logged in
+    try {
+      const token = localStorage.getItem("authToken");
+      if (!token) {
+        navigate("/login");
+        return;
       }
-    };
-    fetchUser();
-  }, [location.pathname]);
+      
+      if (token === "admin-local") {
+        setUser({ name: "Admin", email: "admin1234@amrita.edu", role: "admin" });
+        return;
+      }
 
-  const navigationItems = [
-    { title: "Dashboard", url: createPageUrl("Dashboard"), icon: Home },
-    { title: "Report Found Item", url: createPageUrl("ReportFound"), icon: PlusSquare },
-    { title: "Browse Items", url: createPageUrl("BrowseFound"), icon: Search },
-    { title: "My Activity", url: createPageUrl("MyActivity"), icon: ClipboardList },
-  ];
+      const decodedUser = jwtDecode(token);
+      setUser(decodedUser.user);
 
-  const adminNavigationItem = {
-    title: "Admin Dashboard",
-    url: createPageUrl("AdminDashboard"),
-    icon: Shield,
+    } catch (error) {
+      console.error("Failed to decode token:", error);
+      localStorage.removeItem("authToken");
+      navigate("/login");
+    }
+  }, [location.pathname, navigate]);
+
+  const handleLogout = () => {
+    localStorage.removeItem("authToken");
+    navigate("/login");
   };
+
+  if (!user) {
+    return <div>Loading...</div>; // Or a proper loading spinner
+  }
 
   return (
     <SidebarProvider>
@@ -71,19 +104,19 @@ export default function Layout({ children, currentPageName }) {
       <div className="min-h-screen flex w-full bg-gray-50">
         <Sidebar className="border-r border-gray-200/60 bg-white/95 backdrop-blur-sm">
           <SidebarHeader className="border-b border-gray-200/60 p-5">
-            <Link to={createPageUrl("Dashboard")} className="flex items-center gap-3">
+            <Link to="/dashboard" className="flex items-center gap-3">
               <div className="flex items-center gap-3">
-  <img 
-    src="/logo.png" 
-    alt="Back2U Logo" 
-    className="w-10 h-10 object-contain"
-  />
-  <div>
-    <h2 className="font-bold text-amrita-blue text-lg">Back2You</h2>
-    <p className="text-sm text-gray-500 font-medium">Amrita Lost & Found</p>
-  </div>
-</div>
-
+                <img 
+                  src="/logo.png" 
+                  alt="Back2U Logo" 
+                  className="w-10 h-10 object-contain"
+                  onError={(e) => e.target.style.display = 'none'}
+                />
+                <div>
+                  <h2 className="font-bold text-amrita-blue text-lg">Back2You</h2>
+                  <p className="text-sm text-gray-500 font-medium">Amrita Lost & Found</p>
+                </div>
+              </div>
             </Link>
           </SidebarHeader>
 
@@ -136,24 +169,19 @@ export default function Layout({ children, currentPageName }) {
               <div className="flex items-center gap-3 px-2 py-2">
                 <div className="w-10 h-10 bg-amrita-saffron rounded-full flex items-center justify-center">
                   <span className="text-white font-semibold text-lg">
-                    {user.full_name ? user.full_name.charAt(0).toUpperCase() : "U"}
+                    {user.name ? user.name.charAt(0).toUpperCase() : "U"}
                   </span>
                 </div>
                 <div className="flex-1 min-w-0">
-                  <p className="font-semibold text-gray-800 text-sm truncate">{user.full_name}</p>
+                  <p className="font-semibold text-gray-800 text-sm truncate">{user.name}</p>
                   <p className="text-xs text-gray-500 truncate">{user.email}</p>
                 </div>
-                <Button variant="ghost" size="icon" onClick={() => User.logout()} title="Logout">
+                <Button variant="ghost" size="icon" onClick={handleLogout} title="Logout">
                   <LogOut className="w-5 h-5 text-gray-500 hover:text-amrita-blue" />
                 </Button>
               </div>
             ) : (
-              <Button
-                className="w-full bg-amrita-blue hover:bg-amrita-blue-dark text-white"
-                onClick={() => User.login()}
-              >
-                Login with Campus ID
-              </Button>
+              <p>Not logged in</p>
             )}
           </SidebarFooter>
         </Sidebar>
@@ -165,19 +193,12 @@ export default function Layout({ children, currentPageName }) {
                 <SidebarTrigger className="hover:bg-gray-100 p-2 rounded-xl transition-colors duration-200" />
                 <h1 className="text-lg font-bold text-amrita-blue">Back2You</h1>
               </div>
-              {!user && (
-                <Button
-                  size="sm"
-                  className="bg-amrita-blue hover:bg-amrita-blue-dark text-white"
-                  onClick={() => User.login()}
-                >
-                  Login
-                </Button>
-              )}
             </div>
           </header>
 
-          <div className="flex-1 overflow-auto">{children}</div>
+          <div className="flex-1 overflow-auto p-6">
+             <Outlet />
+          </div>
         </main>
       </div>
     </SidebarProvider>

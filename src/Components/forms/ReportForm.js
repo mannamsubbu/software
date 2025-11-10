@@ -1,25 +1,10 @@
-import React, { useState } from "react";
-import { UploadFile } from "../../integrations/Core"; // adjust path to where Core.js is (or mock it)
+import React, { useState, useRef } from "react";
 import { Button } from "../ui/Button";
 import { Input } from "../ui/Input";
 import { Textarea } from "../ui/Textarea";
-import { Label } from "../ui/Label";
-import { Select } from "../ui/Select";
-import { Card, CardContent } from "../ui/Card";
-import { Upload, Loader2, PlusSquare } from "lucide-react";
-import { motion } from "framer-motion";
-
-const CATEGORIES = [
-  { value: "electronics", label: "Electronics", icon: "📱" },
-  { value: "clothing", label: "Clothing", icon: "👕" },
-  { value: "books", label: "Books & Stationery", icon: "📚" },
-  { value: "jewelry", label: "Jewelry & Accessories", icon: "💍" },
-  { value: "keys", label: "Keys", icon: "🗝️" },
-  { value: "bags", label: "Bags & Backpacks", icon: "🎒" },
-  { value: "documents", label: "Documents & ID", icon: "📄" },
-  { value: "sports_equipment", label: "Sports Equipment", icon: "⚽" },
-  { value: "other", label: "Other", icon: "📦" },
-];
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../ui/Select";
+import { Loader2, UploadCloud, X, Calendar as CalendarIcon, PlusSquare } from "lucide-react";
+// import { format } from "date-fns"; // Not needed for input type="date"
 
 export default function ReportForm({
   onSubmit,
@@ -28,198 +13,240 @@ export default function ReportForm({
   subtitle,
   buttonText,
   fields,
+  formError
 }) {
   const [formData, setFormData] = useState({
-    title: "",
+    name: "",
     description: "",
     category: "",
-    [fields.date]: "",
     contact_phone: "",
-    image_url: "",
+    [fields.date || "date_found"]: "",
+    location: "" // Added location field
   });
-
-  const [imageUploading, setImageUploading] = useState(false);
+  
+  const [imageFile, setImageFile] = useState(null);
   const [imagePreview, setImagePreview] = useState(null);
+  const fileInputRef = useRef(null);
+  const [localError, setLocalError] = useState(null);
 
-  const handleInputChange = (field, value) => {
-    setFormData((prev) => ({ ...prev, [field]: value }));
+  const handleChange = (e) => {
+    const { name, value } = e.target;
+    setFormData((prev) => ({ ...prev, [name]: value }));
   };
 
-  const handleImageUpload = async (e) => {
+  const handleCategoryChange = (value) => {
+    setFormData((prev) => ({ ...prev, category: value }));
+  };
+  
+  const handleFileChange = (e) => {
     const file = e.target.files[0];
-    if (!file) return;
-
-    setImageUploading(true);
-    try {
-      const reader = new FileReader();
-      reader.onload = (e) => setImagePreview(e.target.result);
-      reader.readAsDataURL(file);
-
-      // If no real backend, just simulate URL
-      let file_url = URL.createObjectURL(file);
-      if (UploadFile) {
-        const uploaded = await UploadFile({ file });
-        file_url = uploaded.file_url || file_url;
-      }
-
-      handleInputChange("image_url", file_url);
-    } catch (error) {
-      console.error("Error uploading image:", error);
+    if (file) {
+      setImageFile(file);
+      setImagePreview(URL.createObjectURL(file));
     }
-    setImageUploading(false);
   };
 
-  const handleSubmit = async (e) => {
+  const handleFormSubmit = (e) => {
     e.preventDefault();
-    await onSubmit(formData);
-  };
+    setLocalError(null);
 
-  const isValid =
-    formData.title && formData.description && formData.category && formData[fields.date];
+    const dateField = fields.date || "date_found";
+    const dateStr = formData[dateField];
+
+    const isValidYMD = (s) => {
+      const m = (s || "").match(/^(\d{4})-(\d{2})-(\d{2})$/);
+      if (!m) return false;
+      const d = new Date(`${m[1]}-${m[2]}-${m[3]}T00:00:00Z`);
+      if (Number.isNaN(d.getTime())) return false;
+      return (
+        d.getUTCFullYear() === Number(m[1]) &&
+        d.getUTCMonth() + 1 === Number(m[2]) &&
+        d.getUTCDate() === Number(m[3])
+      );
+    };
+
+    if (!isValidYMD(dateStr)) {
+      setLocalError("Please enter a valid date in YYYY-MM-DD format.");
+      return;
+    }
+
+    const completeFormData = {
+      ...formData,
+      image: imageFile,
+    };
+    onSubmit(completeFormData);
+  };
 
   return (
     <div className="p-4 md:p-8 bg-gray-50/50 min-h-screen">
-      <div className="max-w-2xl mx-auto">
-        <motion.div
-          initial={{ opacity: 0, y: -20 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="mb-8"
-        >
-          <div className="text-center">
-            <h1 className="text-3xl font-bold text-amrita-blue mb-2">{title}</h1>
-            <p className="text-gray-600">{subtitle}</p>
+      <div className="max-w-3xl mx-auto bg-white p-6 md:p-10 rounded-2xl shadow-lg border border-gray-200/80">
+        <div className="text-center mb-8">
+          <h1 className="text-3xl md:text-4xl font-bold text-amrita-blue mb-2">
+            {title}
+          </h1>
+          <p className="text-gray-600 max-w-2xl mx-auto">{subtitle}</p>
+        </div>
+
+        <form onSubmit={handleFormSubmit} className="space-y-6">
+          {localError && (
+            <div className="p-3 bg-red-50 border border-red-200 rounded-lg text-center">
+              <p className="text-sm font-medium text-red-700">{localError}</p>
+            </div>
+          )}
+          
+          {formError && (
+            <div className="p-3 bg-red-50 border border-red-200 rounded-lg text-center">
+              <p className="text-sm font-medium text-red-700">{formError}</p>
+            </div>
+          )}
+
+          <div>
+            <label htmlFor="name" className="block text-sm font-semibold text-gray-700 mb-1">
+              Item Name *
+            </label>
+            <Input
+              id="name"
+              name="name"
+              value={formData.name}
+              onChange={handleChange}
+              placeholder="e.g., iPhone 13, Blue backpack"
+              required
+              className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-amrita-blue"
+            />
           </div>
-        </motion.div>
 
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.2 }}
-        >
-          <Card className="shadow-lg border-none bg-white">
-            <CardContent className="p-8">
-              <form onSubmit={handleSubmit} className="space-y-6">
-                {/* Title */}
-                <div>
-                  <Label htmlFor="title">Item Name *</Label>
-                  <Input
-                    id="title"
-                    value={formData.title}
-                    onChange={(e) => handleInputChange("title", e.target.value)}
-                    placeholder="e.g., iPhone 13, Blue backpack"
-                    required
-                  />
-                </div>
+          <div>
+            <label htmlFor="description" className="block text-sm font-semibold text-gray-700 mb-1">
+              Description *
+            </label>
+            <Textarea
+              id="description"
+              name="description"
+              value={formData.description}
+              onChange={handleChange}
+              placeholder="Color, brand, distinguishing features..."
+              required
+              className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-amrita-blue"
+              rows={4}
+            />
+          </div>
+          
+          <div>
+            <label htmlFor="location" className="block text-sm font-semibold text-gray-700 mb-1">
+              {fields.locationLabel || "Location Found"} (Optional)
+            </label>
+            <Input
+              id="location"
+              name="location"
+              value={formData.location}
+              onChange={handleChange}
+              placeholder="e.g., AB1 Room 302, Central Library"
+              className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-amrita-blue"
+            />
+          </div>
 
-                {/* Description */}
-                <div>
-                  <Label htmlFor="description">Description *</Label>
-                  <Textarea
-                    id="description"
-                    value={formData.description}
-                    onChange={(e) => handleInputChange("description", e.target.value)}
-                    placeholder="Color, brand, distinguishing features..."
-                    className="h-24"
-                    required
-                  />
-                </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div>
+              <label htmlFor="category" className="block text-sm font-semibold text-gray-700 mb-1">
+                Category *
+              </label>
+              <Select onValueChange={handleCategoryChange} value={formData.category} required>
+                <SelectTrigger className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-amrita-blue">
+                  <SelectValue placeholder="Select a category" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="electronics">Electronics</SelectItem>
+                  <SelectItem value="clothing">Clothing</SelectItem>
+                  <SelectItem value="id card">ID Card</SelectItem>
+                  <SelectItem value="keys">Keys</SelectItem>
+                  <SelectItem value="other">Other</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
 
-                {/* Category */}
-                <div>
-                  <Label htmlFor="category">Category *</Label>
-                  <Select
-                    value={formData.category}
-                    onChange={(e) => handleInputChange("category", e.target.value)}
-                  >
-                    <option value="">Select a category</option>
-                    {CATEGORIES.map((cat) => (
-                      <option key={cat.value} value={cat.value}>
-                        {cat.icon} {cat.label}
-                      </option>
-                    ))}
-                  </Select>
-                </div>
+            <div>
+              <label htmlFor="date_found" className="block text-sm font-semibold text-gray-700 mb-1">
+                {fields.dateLabel || "Date Found"} *
+              </label>
+              <Input
+                id="date_found"
+                name={fields.date || "date_found"}
+                type="date"
+                value={formData[fields.date || "date_found"]}
+                onChange={handleChange}
+                required
+                className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-amrita-blue"
+              />
+            </div>
+          </div>
 
-                {/* Date */}
-                <div>
-                  <Label htmlFor="date">{fields.dateLabel} *</Label>
-                  <Input
-                    id="date"
-                    type="date"
-                    value={formData[fields.date]}
-                    onChange={(e) => handleInputChange(fields.date, e.target.value)}
-                    required
-                  />
-                </div>
+          <div>
+            <label htmlFor="contact_phone" className="block text-sm font-semibold text-gray-700 mb-1">
+              Your Mobile Number (Optional)
+            </label>
+            <Input
+              id="contact_phone"
+              name="contact_phone"
+              value={formData.contact_phone}
+              onChange={handleChange}
+              placeholder="e.g., 9876543210"
+              className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-amrita-blue"
+            />
+          </div>
 
-                {/* Phone */}
-                <div>
-                  <Label htmlFor="phone">Your Mobile Number (Optional)</Label>
-                  <Input
-                    id="phone"
-                    type="tel"
-                    value={formData.contact_phone}
-                    onChange={(e) => handleInputChange("contact_phone", e.target.value)}
-                    placeholder="e.g., 9876543210"
-                  />
-                </div>
+          <div>
+            <label className="block text-sm font-semibold text-gray-700 mb-1">
+              Photo (Optional)
+            </label>
+            <input
+              type="file"
+              ref={fileInputRef}
+              onChange={handleFileChange}
+              className="hidden"
+              accept="image/png, image/jpeg"
+            />
+            {!imagePreview ? (
+              <div
+                onClick={() => fileInputRef.current.click()}
+                className="w-full h-48 border-2 border-dashed border-gray-300 rounded-lg flex flex-col items-center justify-center cursor-pointer hover:bg-gray-50"
+              >
+                <UploadCloud className="w-12 h-12 text-gray-400" />
+                <p className="font-semibold text-amrita-blue mt-2">Click to upload</p>
+                <p className="text-xs text-gray-500">PNG, JPG up to 10MB</p>
+              </div>
+            ) : (
+              <div className="relative w-full h-48 rounded-lg overflow-hidden border">
+                <img src={imagePreview} alt="Preview" className="w-full h-full object-contain" />
+                <Button
+                  type="button"
+                  variant="destructive"
+                  size="icon"
+                  className="absolute top-2 right-2 rounded-full h-8 w-8"
+                  onClick={() => {
+                    setImageFile(null);
+                    setImagePreview(null);
+                    fileInputRef.current.value = null;
+                  }}
+                >
+                  <X className="h-4 w-4" />
+                </Button>
+              </div>
+            )}
+          </div>
 
-                {/* Image Upload */}
-                <div>
-                  <Label>Photo (Optional)</Label>
-                  <div className="mt-1 border-2 border-dashed border-gray-200 rounded-lg p-6 text-center hover:border-gray-300">
-                    {imagePreview ? (
-                      <div className="space-y-4">
-                        <img
-                          src={imagePreview}
-                          alt="Preview"
-                          className="max-w-full h-40 object-contain mx-auto rounded-md"
-                        />
-                        <p className="text-sm text-green-600">Image uploaded!</p>
-                      </div>
-                    ) : (
-                      <div>
-                        <div className="w-12 h-12 mx-auto mb-2 bg-gray-100 rounded-lg flex items-center justify-center">
-                          <Upload className="w-6 h-6 text-gray-400" />
-                        </div>
-                        <Label htmlFor="image" className="cursor-pointer text-amrita-blue font-medium">
-                          {imageUploading ? "Uploading..." : "Click to upload"}
-                        </Label>
-                        <p className="text-xs text-gray-500 mt-1">PNG, JPG up to 10MB</p>
-                        <Input
-                          id="image"
-                          type="file"
-                          accept="image/*"
-                          onChange={handleImageUpload}
-                          className="hidden"
-                          disabled={imageUploading}
-                        />
-                      </div>
-                    )}
-                  </div>
-                </div>
-
-                {/* Submit */}
-                <div className="pt-4 border-t border-gray-100">
-                  <Button
-                    type="submit"
-                    className="w-full py-3 text-lg font-medium rounded-xl shadow-md hover:shadow-lg bg-amrita-blue hover:bg-amrita-blue-dark"
-                    disabled={!isValid || isSubmitting}
-                  >
-                    {isSubmitting ? (
-                      <Loader2 className="w-5 h-5 animate-spin" />
-                    ) : (
-                      <span className="flex items-center justify-center gap-2">
-                        <PlusSquare />
-                        {buttonText}
-                      </span>
-                    )}
-                  </Button>
-                </div>
-              </form>
-            </CardContent>
-          </Card>
-        </motion.div>
+          <Button
+            type="submit"
+            disabled={isSubmitting}
+            className="w-full py-3 text-lg font-semibold bg-amrita-blue text-white rounded-lg hover:bg-amrita-blue-dark transition"
+          >
+            {isSubmitting ? (
+              <Loader2 className="w-6 h-6 mr-2 animate-spin" />
+            ) : (
+              <PlusSquare className="w-5 h-5 mr-3" />
+            )}
+            {isSubmitting ? "Submitting..." : buttonText}
+          </Button>
+        </form>
       </div>
     </div>
   );

@@ -1,41 +1,47 @@
 import React from "react";
-import { BrowserRouter as Router, Routes, Route, useLocation } from "react-router-dom";
+import { BrowserRouter, Routes, Route } from "react-router-dom";
+
+// Import Your Pages
 import Dashboard from "./Pages/Dashboard";
 import ReportFound from "./Pages/ReportFound";
 import BrowseFound from "./Pages/BrowseFound";
+import ReportLost from "./Pages/ReportLost";
+import BrowseLost from "./Pages/BrowseLost";
 import AdminDashboard from "./Pages/AdminDashboard";
 import MyActivity from "./Pages/MyActivity";
-import Layout from "./Layout";
 import Login from "./Pages/Login";
 import Register from "./Pages/Register";
+import Settings from "./Pages/Settings";
+import ForgotPassword from "./Pages/ForgotPassword";
+import ResetPassword from "./Pages/ResetPassword";
 
-function AppWrapper() {
-  const location = useLocation();
-  const noLayoutRoutes = ["/login", "/register"];
-  const hideLayout = noLayoutRoutes.includes(location.pathname);
-
-  return hideLayout ? (
-    <Routes>
-      <Route path="/login" element={<Login />} />
-      <Route path="/register" element={<Register />} />
-    </Routes>
-  ) : (
-    <Layout>
-      <Routes>
-        <Route path="/" element={<Dashboard />} />
-        <Route path="/report-found" element={<ReportFound />} />
-        <Route path="/browse-found" element={<BrowseFound />} />
-        <Route path="/admin" element={<AdminDashboard />} />
-        <Route path="/my-activity" element={<MyActivity />} />
-      </Routes>
-    </Layout>
-  );
-}
+// Import Your Layout Component
+import Layout from "./Layout"; // Assuming Layout.js is in src/
 
 export default function App() {
   return (
-    <Router>
-      <AppWrapper />
-    </Router>
+    <BrowserRouter>
+      <Routes>
+        {/* Public routes without the main layout */}
+        <Route path="/" element={<Login />} />
+        <Route path="/login" element={<Login />} />
+        <Route path="/register" element={<Register />} />
+        <Route path="/forgot-password" element={<ForgotPassword />} />
+        <Route path="/reset-password" element={<ResetPassword />} />
+
+        {/* App routes wrapped in the main Layout */}
+        <Route element={<Layout />}>
+          <Route path="/dashboard" element={<Dashboard />} />
+          <Route path="/report-found" element={<ReportFound />} />
+          <Route path="/browse-found" element={<BrowseFound />} />
+          <Route path="/report-lost" element={<ReportLost />} />
+          <Route path="/browse-lost" element={<BrowseLost />} />
+          <Route path="/admin" element={<AdminDashboard />} />
+          <Route path="/my-activity" element={<MyActivity />} />
+          <Route path="/settings" element={<Settings />} />
+        </Route>
+
+      </Routes>
+    </BrowserRouter>
   );
 }
