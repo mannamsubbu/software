@@ -101,7 +101,9 @@ export default function Layout() {
           .bg-amrita-light-blue { background-color: var(--amrita-light-blue); }
         `}
       </style>
+
       <div className="min-h-screen flex w-full bg-gray-50">
+        {/* Sidebar */}
         <Sidebar className="border-r border-gray-200/60 bg-white/95 backdrop-blur-sm">
           <SidebarHeader className="border-b border-gray-200/60 p-5">
             <Link to="/dashboard" className="flex items-center gap-3">
@@ -131,10 +133,11 @@ export default function Layout() {
                     <SidebarMenuItem key={item.title}>
                       <SidebarMenuButton
                         asChild
-                        className={`transition-all duration-200 rounded-lg text-sm ${location.pathname === item.url
-                          ? "bg-amrita-light-blue text-amrita-blue shadow-sm"
-                          : "text-gray-600 hover:bg-gray-100 hover:text-gray-900"
-                          }`}
+                        className={`transition-all duration-200 rounded-lg text-sm ${
+                          location.pathname === item.url
+                            ? "bg-amrita-light-blue text-amrita-blue shadow-sm"
+                            : "text-gray-600 hover:bg-gray-100 hover:text-gray-900"
+                        }`}
                       >
                         <Link to={item.url} className="flex items-center gap-3 px-3 py-2.5">
                           <item.icon className="w-5 h-5" />
@@ -143,14 +146,16 @@ export default function Layout() {
                       </SidebarMenuButton>
                     </SidebarMenuItem>
                   ))}
+
                   {user && user.role === "admin" && (
                     <SidebarMenuItem>
                       <SidebarMenuButton
                         asChild
-                        className={`transition-all duration-200 rounded-lg text-sm ${location.pathname === adminNavigationItem.url
-                          ? "bg-amrita-light-blue text-amrita-blue shadow-sm"
-                          : "text-gray-600 hover:bg-gray-100 hover:text-gray-900"
-                          }`}
+                        className={`transition-all duration-200 rounded-lg text-sm ${
+                          location.pathname === adminNavigationItem.url
+                            ? "bg-amrita-light-blue text-amrita-blue shadow-sm"
+                            : "text-gray-600 hover:bg-gray-100 hover:text-gray-900"
+                        }`}
                       >
                         <Link to={adminNavigationItem.url} className="flex items-center gap-3 px-3 py-2.5">
                           <adminNavigationItem.icon className="w-5 h-5" />
@@ -186,12 +191,13 @@ export default function Layout() {
           </SidebarFooter>
         </Sidebar>
 
+        {/* Main content */}
         <main className="flex-1 flex flex-col bg-gray-50/50">
           <header className="bg-white/90 backdrop-blur-sm border-b border-gray-200/60 px-6 py-4 md:hidden">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-4">
                 <SidebarTrigger className="hover:bg-gray-100 p-2 rounded-xl transition-colors duration-200" />
-                <h1 className="text-lg font-bold text-amrita-blue">Back2You</h1>
+                <h1 className="text-lg font-bold text-amrita-blue">Back2U</h1>
               </div>
             </div>
           </header>

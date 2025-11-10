@@ -79,7 +79,7 @@ export default function Dashboard() {
               Amrita Lost & Found Portal
             </div>
             <h1 className="text-4xl md:text-5xl font-bold text-amrita-blue mb-4">
-              Welcome to Back2You
+              Welcome to Back2U
             </h1>
             <p className="text-lg text-gray-600 max-w-2xl mx-auto mb-8">
               The official place to report and find lost items on campus. Let's help each other bring belongings back to their owners.

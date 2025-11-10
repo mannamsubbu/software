@@ -2,6 +2,12 @@
 
 const STORAGE_KEY = "found_items";
 
+/**
+ * Since there's no real database, we clear the simulated storage
+ * on every page load so the app always starts fresh at zero.
+ */
+localStorage.removeItem(STORAGE_KEY);
+
 function getItems() {
   return JSON.parse(localStorage.getItem(STORAGE_KEY) || "[]");
 }
@@ -11,7 +17,9 @@ function saveItems(items) {
 }
 
 const FoundItem = {
-  // List all items (sorted by date if needed)
+  /**
+   * List all items (optionally sorted and limited)
+   */
   list: async (sortKey = "-created_date", limit = null) => {
     let items = getItems();
     if (sortKey === "-created_date") {
@@ -20,19 +28,23 @@ const FoundItem = {
     return limit ? items.slice(0, limit) : items;
   },
 
-  // Filter items by condition
+  /**
+   * Filter items by exact-match conditions
+   */
   filter: async (conditions, sortKey = null) => {
     let items = getItems();
-    items = items.filter((item) => {
-      return Object.entries(conditions).every(([key, value]) => item[key] === value);
-    });
+    items = items.filter((item) =>
+      Object.entries(conditions).every(([key, value]) => item[key] === value)
+    );
     if (sortKey === "-created_date") {
       items.sort((a, b) => new Date(b.date_found) - new Date(a.date_found));
     }
     return items;
   },
 
-  // Create new item
+  /**
+   * Create a new item (defaults to available)
+   */
   create: async (item) => {
     let items = getItems();
     const newItem = {
@@ -45,7 +57,9 @@ const FoundItem = {
     return newItem;
   },
 
-  // Update existing item
+  /**
+   * Update an item by id
+   */
   update: async (id, updates) => {
     let items = getItems();
     items = items.map((item) => (item.id === id ? { ...item, ...updates } : item));
@@ -53,11 +67,21 @@ const FoundItem = {
     return items.find((i) => i.id === id);
   },
 
-  // Delete an item
+  /**
+   * Delete an item by id
+   */
   delete: async (id) => {
     let items = getItems();
     items = items.filter((item) => item.id !== id);
     saveItems(items);
+  },
+
+  /**
+   * Optional helper to manually clear all items at any time.
+   */
+  reset: async () => {
+    localStorage.removeItem(STORAGE_KEY);
+    return [];
   },
 };
 
